@@ -20,14 +20,25 @@ export const useTasks = () => {
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['tasks']); // Refresh data otomatis
+      queryClient.invalidateQueries(['tasks']);
     },
   });
 
-  // 3. Update Status Task (Drag & Drop Prep)
+  // 3. Update Status Task (Drag & Drop)
   const updateTaskMutation = useMutation({
     mutationFn: async ({ id, ...updates }) => {
       const res = await api.put(`/tasks/${id}`, updates);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['tasks']);
+    },
+  });
+
+  // 4. Hapus Task (BARU)
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (id) => {
+      const res = await api.delete(`/tasks/${id}`);
       return res.data;
     },
     onSuccess: () => {
@@ -40,5 +51,6 @@ export const useTasks = () => {
     isLoading: tasksQuery.isLoading,
     createTask: createTaskMutation.mutate,
     updateTask: updateTaskMutation.mutate,
+    deleteTask: deleteTaskMutation.mutate, // Pastikan ini di-return
   };
 };
