@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  background-color: #FEFAE0; /* */
+  color: #283618;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  display: block; /* Buang flex center bawaan Vite */
+}
