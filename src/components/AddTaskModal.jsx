@@ -3,8 +3,9 @@ import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { HiX } from 'react-icons/hi';
 import { useTasks } from '../hooks/useTasks';
 
-const AddTaskModal = ({ isOpen, onClose }) => {
-  const { createTask } = useTasks();
+const AddTaskModal = ({ isOpen, onClose, projectId }) => {
+  // Masukkan projectId ke dalam hook supaya task terikat ke project aktif
+  const { createTask } = useTasks(projectId); 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('medium');
@@ -12,9 +13,9 @@ const AddTaskModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    createTask({ title, description, priority, status }, { 
+    // Kirim data task lengkap dengan projectId-nya
+    createTask({ title, description, priority, status, projectId }, { 
       onSuccess: () => {
-        // Reset state setelah sukses agar form bersih kembali
         setTitle('');
         setDescription('');
         setPriority('medium');
@@ -43,7 +44,7 @@ const AddTaskModal = ({ isOpen, onClose }) => {
               <HiX size={24} />
             </button>
 
-            <h3 className="text-2xl font-black mb-8 text-[#606C38] tracking-tight text-center">Tambah Tugas Baru</h3>
+            <h3 className="text-2xl font-black mb-8 text-[#606C38] tracking-tight text-center uppercase">Tambah Tugas Baru</h3>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
@@ -69,7 +70,7 @@ const AddTaskModal = ({ isOpen, onClose }) => {
                 <div>
                   <label className="block text-[10px] font-black text-[#606C38]/60 uppercase tracking-[0.2em] mb-2 ml-1">Prioritas</label>
                   <select 
-                    className="w-full bg-[#FEFAE0] border border-[#E0E5B6] rounded-2xl p-4 text-[#283618] focus:outline-none focus:border-[#606C38] font-bold cursor-pointer"
+                    className="w-full bg-[#FEFAE0] border border-[#E0E5B6] rounded-2xl p-4 text-[#283618] focus:outline-none focus:border-[#606C38] font-bold cursor-pointer appearance-none text-xs"
                     value={priority} onChange={(e) => setPriority(e.target.value)}
                   >
                     <option value="low">Low</option>
@@ -80,7 +81,7 @@ const AddTaskModal = ({ isOpen, onClose }) => {
                 <div>
                   <label className="block text-[10px] font-black text-[#606C38]/60 uppercase tracking-[0.2em] mb-2 ml-1">Status Awal</label>
                   <select 
-                    className="w-full bg-[#FEFAE0] border border-[#E0E5B6] rounded-2xl p-4 text-[#283618] focus:outline-none focus:border-[#606C38] font-bold cursor-pointer"
+                    className="w-full bg-[#FEFAE0] border border-[#E0E5B6] rounded-2xl p-4 text-[#283618] focus:outline-none focus:border-[#606C38] font-bold cursor-pointer appearance-none text-xs"
                     value={status} onChange={(e) => setStatus(e.target.value)}
                   >
                     <option value="todo">To Do</option>

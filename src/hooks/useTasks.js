@@ -1,48 +1,50 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
+import toast from 'react-hot-toast';
 
-export const useTasks = () => {
+export const useTasks = (projectId) => {
   const queryClient = useQueryClient();
 
-  // 1. Ambil semua Task
   const tasksQuery = useQuery({
-    queryKey: ['tasks'],
+    queryKey: ['tasks', projectId], 
     queryFn: async () => {
-      const res = await api.get('/tasks');
-      return res.data;
+      const params = projectId ? { projectId } : {};
+      const res = await api.get('/tasks', { params }); 
+      // Mapping _id ke id untuk stabilitas dnd-kit bngst
+      return res.data.map(task => ({ ...task, id: task._id }));
     },
   });
 
-  // 2. Tambah Task Baru
   const createTaskMutation = useMutation({
     mutationFn: async (newTask) => {
       const res = await api.post('/tasks', newTask);
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['tasks']);
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast.success('Tugas baru berhasil ditambahkan! ✨');
     },
   });
 
-  // 3. Update Status Task (Drag & Drop)
   const updateTaskMutation = useMutation({
     mutationFn: async ({ id, ...updates }) => {
       const res = await api.put(`/tasks/${id}`, updates);
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['tasks']);
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
+    onError: () => toast.error('Gagal memperbarui status.'),
   });
 
-  // 4. Hapus Task (BARU)
   const deleteTaskMutation = useMutation({
-    mutationFn: async (id) => {
-      const res = await api.delete(`/tasks/${id}`);
-      return res.data;
-    },
+    mutationFn: async (id) => api.delete(`/tasks/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries(['tasks']);
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast.success('Tugas telah dihapus.');
     },
   });
 
@@ -51,6 +53,6 @@ export const useTasks = () => {
     isLoading: tasksQuery.isLoading,
     createTask: createTaskMutation.mutate,
     updateTask: updateTaskMutation.mutate,
-    deleteTask: deleteTaskMutation.mutate, // Pastikan ini di-return
+    deleteTask: deleteTaskMutation.mutate,
   };
 };

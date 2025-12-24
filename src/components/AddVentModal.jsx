@@ -20,15 +20,32 @@ const AddVentModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const pos = { x: Math.floor(Math.random() * 300), y: Math.floor(Math.random() * 200) };
+    
+    // Kalkulasi posisi acak di dalam area kontainer void (estimasi)
+    const pos = { 
+      x: Math.floor(Math.random() * 400), 
+      y: Math.floor(Math.random() * 300) 
+    };
     const rotate = Math.floor(Math.random() * 20) - 10;
     
     // Gunakan warna dari palette sesuai mood yang dipilih
     const color = moodPalette[mood].bg;
 
-    createVent({ content, mood, position: pos, rotation: rotate, color }, { 
-      onSuccess: () => { setContent(''); onClose(); } 
-    });
+    createVent(
+      { 
+        content, 
+        mood, 
+        position: pos, 
+        rotation: rotate, 
+        color 
+      }, 
+      { 
+        onSuccess: () => { 
+          setContent(''); 
+          onClose(); 
+        } 
+      }
+    );
   };
 
   return (
@@ -37,8 +54,11 @@ const AddVentModal = ({ isOpen, onClose }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
           <Motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={onClose} className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            onClick={onClose} 
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
           />
 
           {/* Modal Content */}
@@ -49,26 +69,36 @@ const AddVentModal = ({ isOpen, onClose }) => {
             style={{ backgroundColor: moodPalette[mood].bg }}
             className="w-full max-w-lg rounded-[3rem] shadow-2xl p-10 relative z-10 transition-colors duration-500"
           >
-            <button onClick={onClose} className="absolute top-8 right-8 hover:scale-110 transition-transform">
+            <button 
+              onClick={onClose} 
+              className="absolute top-8 right-8 hover:scale-110 transition-transform"
+            >
               <HiX size={24} style={{ color: moodPalette[mood].btn }} />
             </button>
 
-            <h3 className="text-3xl font-black mb-2 tracking-tighter" style={{ color: moodPalette[mood].btn }}>The Void</h3>
-            <p className="opacity-60 text-xs font-bold uppercase tracking-widest mb-8">Lepaskan bebanmu secara anonim.</p>
+            <h3 className="text-3xl font-black mb-2 tracking-tighter" style={{ color: moodPalette[mood].btn }}>
+              The Void
+            </h3>
+            <p className="opacity-60 text-xs font-bold uppercase tracking-widest mb-8">
+              Lepaskan bebanmu secara anonim.
+            </p>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <textarea
                 required
                 className="w-full bg-white/30 border border-black/5 rounded-[2rem] p-8 focus:outline-none h-48 resize-none text-lg italic font-medium placeholder:text-black/20"
                 placeholder="Apa yang sedang kamu rasakan?..."
-                value={content} onChange={(e) => setContent(e.target.value)}
+                value={content} 
+                onChange={(e) => setContent(e.target.value)}
               />
 
               <div className="flex items-center justify-between gap-4">
                 <div className="flex flex-wrap gap-2">
                   {Object.keys(moodPalette).map(m => (
                     <button
-                      key={m} type="button" onClick={() => setMood(m)}
+                      key={m} 
+                      type="button" 
+                      onClick={() => setMood(m)}
                       className={`text-xl w-12 h-12 flex items-center justify-center rounded-2xl transition-all 
                         ${mood === m ? 'scale-125 shadow-lg bg-white/50' : 'hover:bg-white/20 opacity-50 hover:opacity-100'}`}
                     >

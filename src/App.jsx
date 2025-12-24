@@ -1,35 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
-import { DndContext, closestCorners, useSensor, useSensors, PointerSensor, KeyboardSensor } from '@dnd-kit/core';
+import { Toaster } from 'react-hot-toast';
+import { useSensor, useSensors, PointerSensor, KeyboardSensor } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 
-// Komponen
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import Footer from './components/Footer';
-import KanbanColumn from './components/KanbanColumn';
-import VentNote from './components/VentNote';
-import AddTaskModal from './components/AddTaskModal';
-import AddVentModal from './components/AddVentModal';
 import Login from './pages/Login';
 
-// Hooks
+import Dashboard from './pages/Dashboard';
+import KanbanView from './pages/KanbanView';
+import VoidView from './pages/VoidView';
+
+import AddTaskModal from './components/AddTaskModal';
+import EditTaskModal from './components/EditTaskModal';
+import AddVentModal from './components/AddVentModal';
+import AddProjectModal from './components/AddProjectModal';
+
 import { useTasks } from './hooks/useTasks';
 import { useVents } from './hooks/useVents';
+import { useProjects } from './hooks/useProjects';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-  const [isVentModalOpen, setIsVentModalOpen] = useState(false);
+  // --- 1. STATES & AUTH ---
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    const token = localStorage.getItem('token');
+    return (savedUser && token) ? JSON.parse(savedUser) : null;
   });
 
-  const { tasks, isLoading: tLoading, updateTask } = useTasks();
-  const { vents, isLoading: vLoading } = useVents();
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [selectedProjectId, setSelectedProjectId] = useState(null); 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+  const [isVentModalOpen, setIsVentModalOpen] = useState(false);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
 
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    setUser(null);
+  }, []);
+
+  // --- 2. DATA FETCHING ---
+  const { projects, isLoading: pLoading } = useProjects();
+  const { vents, isLoading: vLoading } = useVents();
+  
+  // Dashboard Logic: Accumulate all projects but EXCLUDE status 'done'
+  const { tasks: allTasks } = useTasks(null);
+  const activeTasksCount = allTasks?.filter(t => t.status !== 'done').length || 0;
+
+  // Kanban Board Logic: Tasks scoped to selected project
+  const { tasks, updateTask, isLoading: tLoading } = useTasks(selectedProjectId);
+
+  // Requirement: Project can only complete if tasks > 0 and ALL are done
+  const isReadyToComplete = tasks.length > 0 && tasks.every(t => t.status === 'done');
+
+  // --- 3. HANDLERS ---
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -37,92 +67,123 @@ function App() {
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
-    if (over && active.id !== over.id) {
-      updateTask({ id: active.id, status: over.id });
+    if (!over) return;
+    const taskId = active.id;
+    const overId = over.id;
+    const newStatus = ['todo', 'in-progress', 'done'].includes(overId) ? overId : tasks.find(t => t.id === overId)?.status;
+    if (newStatus && tasks.find(t => t.id === taskId).status !== newStatus) {
+      updateTask({ id: taskId, status: newStatus });
     }
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    setUser(null);
+  const handleSelectProject = (projectId) => {
+    setSelectedProjectId(projectId);
+    setActiveTab('kanban');
+  };
+
+  const openEditModal = (task) => {
+    setEditingTask(task);
+    setIsEditModalOpen(true);
+  };
+
+  // Linear Navigation Logic (Board -> Gallery -> Dashboard)
+  const handleBack = () => {
+    if (selectedProjectId) {
+      setSelectedProjectId(null); // Keluar dari board ke gallery
+    } else {
+      setActiveTab('dashboard'); // Keluar dari gallery/void ke dashboard
+    }
+  };
+
+  // Handler Redirect Logo ke Dashboard
+  const handleGoHome = () => {
+    setActiveTab('dashboard');
+    setSelectedProjectId(null); // Reset scope project saat klik logo
   };
 
   if (!user) return <Login onLoginSuccess={setUser} />;
 
   return (
-    <div className="flex h-screen bg-[#FEFAE0] text-[#283618] font-sans overflow-hidden">
+    <div className="flex h-screen bg-[#FEFAE0] text-[#283618] font-sans overflow-hidden font-medium">
+      <Toaster position="top-center" />
       
-      {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col h-full relative">
         <Header 
           activeTab={activeTab} 
           onToggleSidebar={() => setIsSidebarOpen(true)} 
           onAddTask={() => setIsTaskModalOpen(true)}
           onAddVent={() => setIsVentModalOpen(true)}
-          isLoading={tLoading || vLoading}
+          isLoading={tLoading || vLoading || pLoading}
+          selectedProject={projects.find(p => p.id === selectedProjectId)}
+          onBack={handleBack}
+          onGoHome={handleGoHome} // Prop baru untuk handle redirect logo
+          isReadyToComplete={isReadyToComplete}
+          // Matikan Sidebar di Kanban dan Void agar navigasi lewat tombol back
+          hideSidebarToggle={activeTab === 'kanban' || activeTab === 'void'} 
         />
 
         <main className="flex-1 p-10 overflow-y-auto bg-[#FEFAE0] scrollbar-hide">
           <AnimatePresence mode="wait">
             <Motion.div 
-              key={activeTab} 
-              initial={{ opacity: 0, y: 15 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              exit={{ opacity: 0, y: -15 }} 
+              key={activeTab + (selectedProjectId || 'none')} 
+              initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }}
               className="h-full"
             >
               {activeTab === 'dashboard' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-6xl">
-                  <div className="bg-[#FAEDCE] p-12 rounded-[3rem] border border-[#E0E5B6] shadow-sm">
-                    <h3 className="font-bold text-[#606C38] mb-4 uppercase tracking-[0.2em] text-[10px]">Tugas Aktif</h3>
-                    <div className="text-9xl font-black text-[#606C38] leading-none tracking-tighter">{tasks?.length || 0}</div>
-                  </div>
-                  <div className="bg-[#CCD5AE] p-12 rounded-[3rem] flex flex-col justify-between shadow-lg">
-                    <div>
-                      <h3 className="font-bold text-[#606C38] uppercase tracking-[0.2em] text-[10px] mb-2">Pesan Void</h3>
-                      <p className="opacity-80 italic font-medium text-lg">Ada {vents?.length || 0} curhatan mengambang.</p>
-                    </div>
-                    <button 
-                      onClick={() => setActiveTab('void')} 
-                      className="mt-8 bg-[#FEFAE0] text-[#606C38] px-8 py-3 rounded-2xl font-black text-[10px] uppercase shadow-sm w-fit hover:scale-105 transition-all"
-                    >
-                      Buka Void
-                    </button>
-                  </div>
-                </div>
+                <Dashboard 
+                  activeTasksCount={activeTasksCount} 
+                  ventsCount={vents?.length || 0} 
+                  onOpenVoid={() => setActiveTab('void')} 
+                />
               )}
 
               {activeTab === 'kanban' && (
-                <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
-                  <div className="grid grid-cols-3 gap-8 h-full items-start">
-                    {['todo', 'in-progress', 'done'].map(s => (
-                      <KanbanColumn key={s} status={s} tasks={tasks.filter(t => t.status === s)} />
-                    ))}
-                  </div>
-                </DndContext>
+                <KanbanView 
+                  projects={projects} 
+                  tasks={tasks} 
+                  selectedProjectId={selectedProjectId}
+                  onSelectProject={handleSelectProject}
+                  onOpenAddProject={() => setIsProjectModalOpen(true)}
+                  onOpenAddTask={() => setIsTaskModalOpen(true)}
+                  onEditTask={openEditModal}
+                  sensors={sensors}
+                  onDragEnd={handleDragEnd}
+                />
               )}
 
               {activeTab === 'void' && (
-                <div className="relative w-full h-[75vh] bg-white/30 rounded-[4rem] border-2 border-dashed border-[#CCD5AE] overflow-hidden shadow-inner backdrop-blur-sm">
-                  {vents.map(v => <VentNote key={v._id} vent={v} />)}
-                </div>
+                <VoidView 
+                  vents={vents || []} 
+                  onOpenAddVent={() => setIsVentModalOpen(true)} 
+                />
               )}
             </Motion.div>
           </AnimatePresence>
         </main>
-
-        <Footer user={user} />
+        <Footer userName={user?.displayName || 'Guest'} />
       </div>
 
-      <Sidebar 
-        isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} 
-        activeTab={activeTab} setActiveTab={setActiveTab} 
-        user={user} setUser={setUser}
-        onLogout={handleLogout}
-      />
+      {/* Sidebar hanya boleh dibuka di Dashboard */}
+      {activeTab === 'dashboard' && (
+        <Sidebar 
+          isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} 
+          activeTab={activeTab} setActiveTab={setActiveTab} 
+          user={user} setUser={setUser} onLogout={handleLogout} 
+        />
+      )}
 
-      <AddTaskModal isOpen={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} />
+      {/* MODAL OVERLAYS */}
+      <AddTaskModal isOpen={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} projectId={selectedProjectId} />
+      
+      {/* Key fix cascading renders error */}
+      <EditTaskModal 
+        key={editingTask?.id || 'empty'}
+        isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} 
+        task={editingTask} projectId={selectedProjectId} 
+      />
+      
       <AddVentModal isOpen={isVentModalOpen} onClose={() => setIsVentModalOpen(false)} />
+      <AddProjectModal isOpen={isProjectModalOpen} onClose={() => setIsProjectModalOpen(false)} />
     </div>
   );
 }

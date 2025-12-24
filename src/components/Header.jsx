@@ -1,27 +1,100 @@
 import React from 'react';
-import { HiMenu, HiPlus } from 'react-icons/hi';
+import { HiMenu, HiChevronLeft, HiCheckCircle } from 'react-icons/hi';
+import { useProjects } from '../hooks/useProjects';
 
-const Header = ({ activeTab, onToggleSidebar, onAddTask, onAddVent, isLoading }) => {
+const Header = ({ 
+  activeTab, 
+  onToggleSidebar, 
+  selectedProject, 
+  onBack, 
+  onGoHome, 
+  isLoading, 
+  isReadyToComplete, 
+  hideSidebarToggle 
+}) => {
+  const { completeProject } = useProjects();
+
+  const handleComplete = () => {
+    if (!isReadyToComplete) return;
+    if (window.confirm(`Selesaikan project "${selectedProject.name}"?`)) {
+      completeProject(selectedProject.id);
+      onBack(); 
+    }
+  };
+
   return (
-    <header className="h-24 bg-[#E0E5B6] px-10 flex justify-between items-center shadow-sm border-b border-[#CCD5AE]">
-      <div className="flex items-center gap-4">
-        <h2 className="text-3xl font-black capitalize text-[#606C38] tracking-tight">{activeTab}</h2>
-        {/* Loading var digunakan agar linter bersih */}
-        {isLoading && <span className="text-[10px] bg-[#606C38] text-white px-3 py-1 rounded-full animate-pulse font-bold">SYNCING...</span>}
+    <header className="px-10 py-6 flex justify-between items-center bg-[#FAEDCE]/95 backdrop-blur-xl sticky top-0 z-50 shadow-[0_4px_20px_-5px_rgba(40,54,24,0.1)] border-b border-[#E0E5B6]">
+      <div className="flex items-center gap-8">
+        {/* LOGO AREA: Klik SS buat balik ke Dashboard Utama */}
+        <button 
+          onClick={onGoHome}
+          className="group flex items-center gap-2 focus:outline-none"
+          title="Ke Dashboard"
+        >
+          <div className="bg-[#606C38] text-[#FEFAE0] p-1.5 rounded-lg rotate-3 group-hover:rotate-0 transition-transform duration-300 shadow-sm">
+            <span className="font-black text-xs tracking-tighter">SS</span>
+          </div>
+          <span className="text-xl font-black text-[#283618] tracking-tighter hover:text-[#606C38] transition-colors">
+            SafeStack
+          </span>
+        </button>
+
+        {/* Separator Line */}
+        <div className="h-6 w-[1px] bg-[#E0E5B6] hidden md:block" />
+
+        <div className="flex items-center gap-4">
+          {/* Tombol Back HANYA muncul saat di dalam Board Proyek */}
+          {activeTab === 'kanban' && selectedProject && (
+            <button 
+              onClick={onBack}
+              className="p-2.5 bg-[#FEFAE0] rounded-xl text-[#606C38] hover:scale-110 active:scale-95 transition-all shadow-sm border border-[#E0E5B6] group"
+              title="Kembali ke Galeri"
+            >
+              <HiChevronLeft size={20} className="group-hover:-translate-x-0.5 transition-transform" />
+            </button>
+          )}
+          
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-extrabold text-[#283618]/80 tracking-tight leading-none drop-shadow-sm">
+              {selectedProject ? selectedProject.name : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+            </h1>
+            {isLoading && (
+              <div className="flex items-center gap-1.5 mt-1">
+                <div className="w-1 h-1 bg-[#606C38] rounded-full animate-pulse" />
+                <span className="text-[7px] font-black text-[#606C38]/40 uppercase tracking-[0.2em]">
+                  Syncing
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      <div className="flex items-center gap-6">
-        {activeTab === 'kanban' && (
-          <button onClick={onAddTask} className="flex items-center gap-2 bg-[#606C38] text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-[#283618] transition-all">
-            <HiPlus size={20} /> New Task
+      <div className="flex items-center gap-4">
+        {/* Tombol Complete Project (Hanya di Board) */}
+        {selectedProject && selectedProject.status !== 'completed' && (
+          <button 
+            onClick={handleComplete}
+            disabled={!isReadyToComplete}
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg 
+              ${isReadyToComplete 
+                ? 'bg-[#606C38] text-white hover:bg-[#283618] shadow-[#606C38]/30' 
+                : 'bg-[#CCD5AE]/50 text-[#606C38]/40 cursor-not-allowed opacity-60'}`}
+          >
+            <HiCheckCircle size={18} />
+            {isReadyToComplete ? 'Complete Project' : 'Tasks remaining...'}
           </button>
         )}
-        {activeTab === 'void' && (
-          <button onClick={onAddVent} className="bg-[#BC6C25] text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:bg-[#a05a1d] transition-all text-sm uppercase">Post to Void</button>
+
+        {/* Sidebar dimatikan pas di Kanban/Void biar navigasi tertib */}
+        {!hideSidebarToggle && (
+          <button 
+            onClick={onToggleSidebar} 
+            className="text-[#283618] p-2 hover:bg-[#FEFAE0] rounded-xl transition-all border border-transparent hover:border-[#E0E5B6]"
+          >
+            <HiMenu size={32} />
+          </button>
         )}
-        <button onClick={onToggleSidebar} className="p-2 text-[#606C38] hover:bg-[#CCD5AE] rounded-xl transition-all">
-          <HiMenu size={32} />
-        </button>
       </div>
     </header>
   );
