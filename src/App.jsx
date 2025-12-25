@@ -12,6 +12,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import KanbanView from './pages/KanbanView';
 import VoidView from './pages/VoidView';
+import HistoryView from './pages/HistoryView'; 
 
 import AddTaskModal from './components/AddTaskModal';
 import EditTaskModal from './components/EditTaskModal';
@@ -49,15 +50,17 @@ function App() {
   const { projects, isLoading: pLoading } = useProjects();
   const { vents, isLoading: vLoading } = useVents();
   
-  // Dashboard Logic: Accumulate all projects but EXCLUDE status 'done'
   const { tasks: allTasks } = useTasks(null);
   const activeTasksCount = allTasks?.filter(t => t.status !== 'done').length || 0;
 
-  // Kanban Board Logic: Tasks scoped to selected project
   const { tasks, updateTask, isLoading: tLoading } = useTasks(selectedProjectId);
-
-  // Requirement: Project can only complete if tasks > 0 and ALL are done
   const isReadyToComplete = tasks.length > 0 && tasks.every(t => t.status === 'done');
+
+  const completedProjects = projects.filter(p => p.status === 'completed');
+
+  // Logic menentukan apakah project yang sedang dibuka adalah Read Only (Completed)
+  const selectedProjectData = projects.find(p => p.id === selectedProjectId);
+  const isProjectReadOnly = selectedProjectData?.status === 'completed';
 
   // --- 3. HANDLERS ---
   const sensors = useSensors(
@@ -86,19 +89,17 @@ function App() {
     setIsEditModalOpen(true);
   };
 
-  // Linear Navigation Logic (Board -> Gallery -> Dashboard)
   const handleBack = () => {
     if (selectedProjectId) {
-      setSelectedProjectId(null); // Keluar dari board ke gallery
+      setSelectedProjectId(null); 
     } else {
-      setActiveTab('dashboard'); // Keluar dari gallery/void ke dashboard
+      setActiveTab('dashboard'); 
     }
   };
 
-  // Handler Redirect Logo ke Dashboard
   const handleGoHome = () => {
     setActiveTab('dashboard');
-    setSelectedProjectId(null); // Reset scope project saat klik logo
+    setSelectedProjectId(null); 
   };
 
   if (!user) return <Login onLoginSuccess={setUser} />;
@@ -116,10 +117,8 @@ function App() {
           isLoading={tLoading || vLoading || pLoading}
           selectedProject={projects.find(p => p.id === selectedProjectId)}
           onBack={handleBack}
-          onGoHome={handleGoHome} // Prop baru untuk handle redirect logo
+          onGoHome={handleGoHome} 
           isReadyToComplete={isReadyToComplete}
-          // Matikan Sidebar di Kanban dan Void agar navigasi lewat tombol back
-          hideSidebarToggle={activeTab === 'kanban' || activeTab === 'void'} 
         />
 
         <main className="flex-1 p-10 overflow-y-auto bg-[#FEFAE0] scrollbar-hide">
@@ -148,6 +147,7 @@ function App() {
                   onEditTask={openEditModal}
                   sensors={sensors}
                   onDragEnd={handleDragEnd}
+                  isReadOnly={isProjectReadOnly} // Props Kunci untuk mematikan aksi
                 />
               )}
 
@@ -157,25 +157,32 @@ function App() {
                   onOpenAddVent={() => setIsVentModalOpen(true)} 
                 />
               )}
+
+              {activeTab === 'history' && (
+                <HistoryView 
+                  completedProjects={completedProjects} 
+                  onOpenProject={handleSelectProject} 
+                />
+              )}
             </Motion.div>
           </AnimatePresence>
         </main>
         <Footer userName={user?.displayName || 'Guest'} />
       </div>
 
-      {/* Sidebar hanya boleh dibuka di Dashboard */}
-      {activeTab === 'dashboard' && (
-        <Sidebar 
-          isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} 
-          activeTab={activeTab} setActiveTab={setActiveTab} 
-          user={user} setUser={setUser} onLogout={handleLogout} 
-        />
-      )}
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        user={user} 
+        setUser={setUser} 
+        onLogout={handleLogout} 
+      />
 
       {/* MODAL OVERLAYS */}
       <AddTaskModal isOpen={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} projectId={selectedProjectId} />
       
-      {/* Key fix cascading renders error */}
       <EditTaskModal 
         key={editingTask?.id || 'empty'}
         isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} 
