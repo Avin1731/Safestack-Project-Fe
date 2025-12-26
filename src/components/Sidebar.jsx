@@ -14,11 +14,12 @@ import api from '../api/axios';
 
 const Sidebar = ({ isOpen, onClose, activeTab, setActiveTab, user, setUser, onLogout }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [newName, setNewName] = useState(user?.displayName || '');
   
-  // LOGIC FIX: Jangan langsung kasih placeholder kalau user punya photoUrl
-  // Gunakan optional chaining dan fallback yang benar
-  const [newPhoto, setNewPhoto] = useState(user?.photoUrl || ''); 
+  // State diinisialisasi langsung dari props.
+  // Karena di App.jsx kita pakai key={user.id}, komponen ini akan dibuat ulang 
+  // (state di-reset) setiap kali user berubah. Tidak perlu useEffect lagi.
+  const [newName, setNewName] = useState(user?.displayName || '');
+  const [newPhoto, setNewPhoto] = useState(user?.photoUrl || '');
 
   const handleUpdate = async () => {
     try {
@@ -66,28 +67,25 @@ const Sidebar = ({ isOpen, onClose, activeTab, setActiveTab, user, setUser, onLo
             <div className="flex flex-col items-center mt-8 mb-12">
               <div className="relative group mb-4">
                 <div className="w-28 h-28 rounded-full border-4 border-[#FEFAE0] shadow-lg overflow-hidden bg-[#CCD5AE] flex items-center justify-center">
-                  {/* LOGIC DISPLAY FOTO */}
                   {newPhoto ? (
                     <img 
                       src={newPhoto} 
                       alt="Profile" 
                       className="w-full h-full object-cover"
-                      // INI KUNCINYA AGAR FOTO GOOGLE MUNCUL
+                      // FIX: Menghindari pemblokiran akses gambar dari server Google
                       referrerPolicy="no-referrer" 
                       onError={(e) => {
                         e.target.style.display = 'none'; // Sembunyikan jika error
-                        setNewPhoto(''); // Fallback ke inisial
+                        setNewPhoto(''); 
                       }}
                     />
                   ) : (
-                    // FALLBACK INISIAL JIKA TIDAK ADA FOTO
                     <span className="text-4xl font-black text-[#606C38]">
                       {user?.displayName?.charAt(0).toUpperCase() || 'U'}
                     </span>
                   )}
                 </div>
                 
-                {/* Tombol edit hanya muncul saat isEditing true biar bersih */}
                 {isEditing && (
                   <button 
                     onClick={() => { 

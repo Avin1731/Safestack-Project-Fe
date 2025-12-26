@@ -26,9 +26,15 @@ import { useProjects } from './hooks/useProjects';
 function App() {
   // --- 1. STATES & AUTH ---
   const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
-    return (savedUser && token) ? JSON.parse(savedUser) : null;
+    try {
+      const savedUser = localStorage.getItem('user');
+      const token = localStorage.getItem('token');
+      // Validasi: pastikan data ada dan bukan string "undefined"
+      if (savedUser && savedUser !== "undefined" && token) {
+        return JSON.parse(savedUser);
+      }
+      return null;
+    } catch { return null; }
   });
 
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -44,9 +50,11 @@ function App() {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     setUser(null);
+    window.location.href = '/'; // Reset bersih ke login
   }, []);
 
   // --- 2. DATA FETCHING ---
+  // Hook dipanggil di level atas, tapi Axios akan handle error 401 jika token invalid
   const { projects, isLoading: pLoading } = useProjects();
   const { vents, isLoading: vLoading } = useVents();
   
@@ -57,8 +65,6 @@ function App() {
   const isReadyToComplete = tasks.length > 0 && tasks.every(t => t.status === 'done');
 
   const completedProjects = projects.filter(p => p.status === 'completed');
-
-  // Logic menentukan apakah project yang sedang dibuka adalah Read Only (Completed)
   const selectedProjectData = projects.find(p => p.id === selectedProjectId);
   const isProjectReadOnly = selectedProjectData?.status === 'completed';
 
@@ -70,7 +76,7 @@ function App() {
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
-    if (!over) return;
+    if (!over || isProjectReadOnly) return;
     const taskId = active.id;
     const overId = over.id;
     const newStatus = ['todo', 'in-progress', 'done'].includes(overId) ? overId : tasks.find(t => t.id === overId)?.status;
@@ -115,7 +121,7 @@ function App() {
           onAddTask={() => setIsTaskModalOpen(true)}
           onAddVent={() => setIsVentModalOpen(true)}
           isLoading={tLoading || vLoading || pLoading}
-          selectedProject={projects.find(p => p.id === selectedProjectId)}
+          selectedProject={selectedProjectData}
           onBack={handleBack}
           onGoHome={handleGoHome} 
           isReadyToComplete={isReadyToComplete}
@@ -147,7 +153,7 @@ function App() {
                   onEditTask={openEditModal}
                   sensors={sensors}
                   onDragEnd={handleDragEnd}
-                  isReadOnly={isProjectReadOnly} // Props Kunci untuk mematikan aksi
+                  isReadOnly={isProjectReadOnly}
                 />
               )}
 
@@ -170,7 +176,9 @@ function App() {
         <Footer userName={user?.displayName || 'Guest'} />
       </div>
 
+      {/* KEY PROP: Ini penting agar state Sidebar ter-reset saat user ganti, tanpa useEffect */}
       <Sidebar 
+        key={user?.id || 'guest'} 
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
         activeTab={activeTab} 
