@@ -54,7 +54,6 @@ function App() {
   }, []);
 
   // --- 2. DATA FETCHING ---
-  // Hook dipanggil di level atas, tapi Axios akan handle error 401 jika token invalid
   const { projects, isLoading: pLoading } = useProjects();
   const { vents, isLoading: vLoading } = useVents();
   
@@ -66,6 +65,8 @@ function App() {
 
   const completedProjects = projects.filter(p => p.status === 'completed');
   const selectedProjectData = projects.find(p => p.id === selectedProjectId);
+  
+  // Logic cek apakah project ini read only (Completed)
   const isProjectReadOnly = selectedProjectData?.status === 'completed';
 
   // --- 3. HANDLERS ---
@@ -87,7 +88,7 @@ function App() {
 
   const handleSelectProject = (projectId) => {
     setSelectedProjectId(projectId);
-    setActiveTab('kanban');
+    setActiveTab('kanban'); // View render tetap di komponen KanbanView
   };
 
   const openEditModal = (task) => {
@@ -95,8 +96,14 @@ function App() {
     setIsEditModalOpen(true);
   };
 
+  // --- PERBAIKAN LOGIC NAVIGASI BACK DISINI ---
   const handleBack = () => {
     if (selectedProjectId) {
+      // Jika project yang sedang dibuka adalah 'completed' (History),
+      // maka saat back harus kembali ke tab 'history', bukan ke gallery kanban.
+      if (isProjectReadOnly) {
+        setActiveTab('history');
+      }
       setSelectedProjectId(null); 
     } else {
       setActiveTab('dashboard'); 
@@ -142,6 +149,7 @@ function App() {
                 />
               )}
 
+              {/* Kanban View menangani Tampilan Active & History Detail */}
               {activeTab === 'kanban' && (
                 <KanbanView 
                   projects={projects} 
@@ -176,7 +184,6 @@ function App() {
         <Footer userName={user?.displayName || 'Guest'} />
       </div>
 
-      {/* KEY PROP: Ini penting agar state Sidebar ter-reset saat user ganti, tanpa useEffect */}
       <Sidebar 
         key={user?.id || 'guest'} 
         isOpen={isSidebarOpen} 

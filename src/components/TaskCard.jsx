@@ -4,9 +4,14 @@ import { CSS } from '@dnd-kit/utilities';
 import { HiOutlineClock, HiOutlineTrash, HiPencil } from 'react-icons/hi';
 import { useTasks } from '../hooks/useTasks';
 
-const TaskCard = ({ task, projectId, onEditTask }) => {
+const TaskCard = ({ task, projectId, onEditTask, isReadOnly = false }) => {
   const { deleteTask } = useTasks(projectId);
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
+  
+  // 1. Matikan fitur drag jika isReadOnly aktif
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
+    id: task.id,
+    disabled: isReadOnly 
+  });
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -21,6 +26,9 @@ const TaskCard = ({ task, projectId, onEditTask }) => {
     high: 'bg-[#BC6C25] text-white',
   };
 
+  // Logic cursor: Kalau read only, jangan kasih cursor 'grab'
+  const cursorStyle = isReadOnly ? 'cursor-default' : 'cursor-grab active:cursor-grabbing';
+
   return (
     <div 
       ref={setNodeRef} style={style}
@@ -30,13 +38,36 @@ const TaskCard = ({ task, projectId, onEditTask }) => {
         <span className={`text-[7px] uppercase font-black px-3 py-1 rounded-full tracking-widest ${priorityColors[task.priority]}`}>
           {task.priority}
         </span>
-        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={(e) => { e.stopPropagation(); onEditTask(task); }} className="text-[#606C38] hover:scale-125 transition-transform"><HiPencil size={18} /></button>
-          <button onClick={(e) => { e.stopPropagation(); if(window.confirm('Hapus?')) deleteTask(task.id); }} className="text-[#BC6C25] hover:scale-125 transition-transform"><HiOutlineTrash size={18} /></button>
-        </div>
+        
+        {/* 2. Logic Sembunyikan Tombol Edit & Delete */}
+        {!isReadOnly && (
+          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button 
+              onClick={(e) => { e.stopPropagation(); onEditTask(task); }} 
+              className="text-[#606C38] hover:scale-125 transition-transform"
+              title="Edit Task"
+            >
+              <HiPencil size={18} />
+            </button>
+            <button 
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                if(window.confirm('Hapus task ini?')) deleteTask(task.id); 
+              }} 
+              className="text-[#BC6C25] hover:scale-125 transition-transform"
+              title="Delete Task"
+            >
+              <HiOutlineTrash size={18} />
+            </button>
+          </div>
+        )}
       </div>
 
-      <h4 {...attributes} {...listeners} className="font-black text-[#283618] text-lg mb-2 cursor-grab active:cursor-grabbing leading-tight">
+      <h4 
+        {...attributes} 
+        {...listeners} 
+        className={`font-black text-[#283618] text-lg mb-2 leading-tight ${cursorStyle}`}
+      >
         {task.title}
       </h4>
       <p className="text-xs text-[#606C38]/70 font-medium line-clamp-2 mb-4">{task.description}</p>

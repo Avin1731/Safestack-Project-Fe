@@ -3,8 +3,8 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import TaskCard from './TaskCard';
 
-const KanbanColumn = ({ status, tasks, onEditTask, projectId }) => {
-  const { setNodeRef } = useDroppable({ id: status });
+const KanbanColumn = ({ status, tasks, onEditTask, projectId, isReadOnly = false }) => {
+  const { setNodeRef } = useDroppable({ id: status, disabled: isReadOnly });
 
   const config = {
     'todo': { 
@@ -29,8 +29,17 @@ const KanbanColumn = ({ status, tasks, onEditTask, projectId }) => {
 
   const current = config[status];
 
+  // --- LOGIC STYLE DINAMIS ---
+  // Jika ReadOnly (History): Tinggi otomatis (h-fit), scroll dimatikan (biar scroll page aja).
+  // Jika Kanban Mode: Tinggi fix (h-[70vh]), scroll aktif di dalam kolom.
+  const containerHeight = isReadOnly ? 'h-fit' : 'h-[70vh] overflow-hidden';
+  const listScroll = isReadOnly ? '' : 'overflow-y-auto scrollbar-hide';
+  const droppablePadding = isReadOnly ? 'pb-0' : 'pb-10';
+
   return (
-    <div className={`flex flex-col h-[70vh] min-w-[320px] rounded-[3rem] border ${current.borderColor} ${current.bgColor} p-6 overflow-hidden transition-all shadow-inner`}>
+    <div className={`flex flex-col ${containerHeight} min-w-[320px] rounded-[3rem] border ${current.borderColor} ${current.bgColor} p-6 transition-all shadow-inner`}>
+      
+      {/* Header Kolom */}
       <div className="flex items-center gap-3 mb-6 px-2">
         <div className={`w-2 h-2 rounded-full ${current.accent} animate-pulse`} />
         <h3 className="font-black text-xs uppercase tracking-[0.2em] text-[#283618]/70">
@@ -39,18 +48,26 @@ const KanbanColumn = ({ status, tasks, onEditTask, projectId }) => {
         <span className="ml-auto text-[10px] font-black opacity-30">{tasks.length}</span>
       </div>
 
-      {/* Area Droppable yang scrollable */}
+      {/* Area List Task */}
       <div 
         ref={setNodeRef} 
-        className="flex-1 overflow-y-auto scrollbar-hide space-y-4 pb-10"
+        className={`flex-1 space-y-4 ${listScroll} ${droppablePadding}`}
       >
         <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
           {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} projectId={projectId} onEditTask={onEditTask} />
+            <TaskCard 
+              key={task.id} 
+              task={task} 
+              projectId={projectId} 
+              onEditTask={onEditTask} 
+              // PENTING: Oper status read only ke TaskCard buat hilangin tombol edit/delete
+              isReadOnly={isReadOnly} 
+            />
           ))}
         </SortableContext>
         
-        {tasks.length === 0 && (
+        {/* Placeholder hanya muncul kalau bukan mode Read Only */}
+        {tasks.length === 0 && !isReadOnly && (
           <div className="h-24 flex items-center justify-center border-2 border-dashed border-black/5 rounded-[2.5rem] opacity-20 italic text-xs">
             Drop tasks here...
           </div>

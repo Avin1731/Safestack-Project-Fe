@@ -12,3 +12,12 @@ body {
   padding: 0;
   display: block; /* Buang flex center bawaan Vite */
 }
+
+/* HIDE SCROLLBAR */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
