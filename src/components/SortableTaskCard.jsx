@@ -6,6 +6,7 @@ import { useTasks } from '../hooks/useTasks';
 
 const SortableTaskCard = ({ task }) => {
   const { deleteTask } = useTasks();
+  
   const {
     attributes,
     listeners,
@@ -13,24 +14,26 @@ const SortableTaskCard = ({ task }) => {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task._id });
+  } = useSortable({ id: task._id || task.id });
 
   const style = {
     transform: CSS.Translate.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.3 : 1,
+    zIndex: isDragging ? 100 : 1,
   };
 
   const priorityColors = {
-    low: 'bg-green-500/10 text-green-500',
-    medium: 'bg-yellow-500/10 text-yellow-500',
-    high: 'bg-red-500/10 text-red-500',
+    low: 'bg-[#CCD5AE]/70 text-olive border-olive/10 dark:bg-blue-900/50 dark:text-blue-200 dark:border-blue-500/30',
+    medium: 'bg-[#D4A373]/80 text-white border-[#D4A373]/20 dark:bg-yellow-600/80 dark:border-yellow-500/30',
+    high: 'bg-[#BC6C25]/80 text-white border-[#BC6C25]/20 dark:bg-red-600/80 dark:border-red-500/30',
   };
 
   const handleDelete = (e) => {
-    e.stopPropagation(); // Mencegah trigger drag saat klik hapus
+    e.preventDefault();
+    e.stopPropagation(); 
     if (window.confirm('Hapus tugas ini secara permanen?')) {
-      deleteTask(task._id);
+      deleteTask(task._id || task.id);
     }
   };
 
@@ -38,31 +41,59 @@ const SortableTaskCard = ({ task }) => {
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      className="bg-slate-700/50 border border-slate-600 p-4 rounded-xl hover:border-blue-500/50 transition-all cursor-grab active:cursor-grabbing group touch-none"
+      className={`
+        relative overflow-hidden backdrop-blur-md rounded-[2.5rem] transition-all duration-300 group mb-4 touch-none border
+        bg-gradient-to-b from-pale/90 to-cream/90 border-sage
+        dark:from-dark-card/90 dark:to-dark-bg/90 dark:border-dark-border
+        ${isDragging ? 'shadow-2xl ring-2 ring-olive scale-[1.02] dark:ring-blue-500' : 'hover:shadow-lg hover:border-olive/30 hover:-translate-y-0.5 dark:hover:border-blue-500/30'}
+      `}
     >
-      <div className="flex justify-between items-start mb-2">
-        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${priorityColors[task.priority]}`}>
+      {/* HEADER: Priority & Delete Action */}
+      <div className="flex justify-between items-start mb-4 relative z-10">
+        <span className={`text-[8px] uppercase font-black px-3 py-1.5 rounded-full tracking-widest border shadow-sm ${priorityColors[task.priority] || priorityColors.low}`}>
           {task.priority}
         </span>
-        {/* Tombol Delete Aktif */}
+        
         <button 
+          onPointerDown={(e) => e.stopPropagation()} 
           onClick={handleDelete}
-          className="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+          className="p-1.5 rounded-full transition-all opacity-0 group-hover:opacity-100
+            text-earth/70 hover:text-earth hover:bg-earth/10
+            dark:text-red-400 dark:hover:text-red-500 dark:hover:bg-red-500/20"
+          title="Delete Task"
         >
           <HiOutlineTrash size={18} />
         </button>
       </div>
 
-      {/* Handler Drag dipisah ke konten agar tombol delete tidak macet */}
-      <div {...listeners}>
-        <h4 className="font-bold text-slate-100 mb-1">{task.title}</h4>
-        <p className="text-xs text-slate-400 line-clamp-2 mb-3">{task.description}</p>
-        <div className="flex items-center gap-1 text-[10px] text-slate-500">
-          <HiOutlineClock />
-          <span>{new Date(task.createdAt).toLocaleDateString()}</span>
+      {/* DRAGGABLE AREA */}
+      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
+        <h4 className="font-black text-lg mb-3 leading-tight relative z-10
+          text-forest dark:text-dark-text">
+          {task.title}
+        </h4>
+        
+        {task.description && (
+          <p className="text-sm font-medium line-clamp-2 mb-5 relative z-10
+            text-olive/80 dark:text-dark-sub">
+            {task.description}
+          </p>
+        )}
+
+        {/* FOOTER: Date */}
+        <div className="flex items-center gap-2 text-[9px] font-black uppercase relative z-10
+          text-olive/50 dark:text-dark-sub/50">
+          <HiOutlineClock size={12} />
+          <span>
+            {task.createdAt ? new Date(task.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '-'}
+          </span>
         </div>
       </div>
+      
+      {/* Decorative Element */}
+      <div className="absolute -bottom-6 -right-6 w-20 h-20 rounded-full blur-xl pointer-events-none transition-colors
+        bg-olive/5 group-hover:bg-olive/10
+        dark:bg-blue-500/5 dark:group-hover:bg-blue-500/10" />
     </div>
   );
 };

@@ -29,6 +29,7 @@ export const useVents = (filter = 'all', sort = 'newest') => {
   });
 
   // --- MUTATIONS ---
+
   const createVentMutation = useMutation({
     mutationFn: async (newVent) => {
       const res = await api.post('/vents', newVent, { headers: getHeaders() });
@@ -43,11 +44,14 @@ export const useVents = (filter = 'all', sort = 'newest') => {
     },
   });
 
+  // FIX: Support Mutation now returns data so UI can sync
   const toggleSupportMutation = useMutation({
     mutationFn: async (id) => {
-      await api.put(`/vents/${id}/support`, {}, { headers: getHeaders() });
+      const res = await api.put(`/vents/${id}/support`, {}, { headers: getHeaders() });
+      return res.data; // Return the data object directly
     },
     onSuccess: () => {
+      // Invalidate queries so sidebar trending & count also update
       queryClient.invalidateQueries({ queryKey: ['vents'] });
       queryClient.invalidateQueries({ queryKey: ['ventStats'] });
     }
@@ -55,7 +59,8 @@ export const useVents = (filter = 'all', sort = 'newest') => {
 
   const addCommentMutation = useMutation({
     mutationFn: async ({ id, content }) => {
-      await api.post(`/vents/${id}/comments`, { content }, { headers: getHeaders() });
+      const res = await api.post(`/vents/${id}/comments`, { content }, { headers: getHeaders() });
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vents'] });
@@ -65,7 +70,8 @@ export const useVents = (filter = 'all', sort = 'newest') => {
 
   const deleteVentMutation = useMutation({
     mutationFn: async (id) => {
-      await api.delete(`/vents/${id}`, { headers: getHeaders() });
+      const res = await api.delete(`/vents/${id}`, { headers: getHeaders() });
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vents'] });
@@ -75,20 +81,22 @@ export const useVents = (filter = 'all', sort = 'newest') => {
     onError: () => toast.error('Bukan milikmu.'),
   });
 
-  // Like Komentar
+  // Like Comment
   const toggleCommentLikeMutation = useMutation({
     mutationFn: async ({ ventId, commentId }) => {
-      await api.put(`/vents/${ventId}/comments/${commentId}/like`, {}, { headers: getHeaders() });
+      const res = await api.put(`/vents/${ventId}/comments/${commentId}/like`, {}, { headers: getHeaders() });
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vents'] });
     }
   });
 
-  // Reply Komentar (Dengan Tagging replyTo)
+  // Reply Comment (With Tagging replyTo)
   const replyCommentMutation = useMutation({
     mutationFn: async ({ ventId, commentId, content, replyTo }) => {
-      await api.post(`/vents/${ventId}/comments/${commentId}/reply`, { content, replyTo }, { headers: getHeaders() });
+      const res = await api.post(`/vents/${ventId}/comments/${commentId}/reply`, { content, replyTo }, { headers: getHeaders() });
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vents'] });
@@ -99,7 +107,8 @@ export const useVents = (filter = 'all', sort = 'newest') => {
   // Like Reply
   const toggleReplyLikeMutation = useMutation({
     mutationFn: async ({ ventId, commentId, replyId }) => {
-      await api.put(`/vents/${ventId}/comments/${commentId}/replies/${replyId}/like`, {}, { headers: getHeaders() });
+      const res = await api.put(`/vents/${ventId}/comments/${commentId}/replies/${replyId}/like`, {}, { headers: getHeaders() });
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vents'] });
@@ -110,12 +119,17 @@ export const useVents = (filter = 'all', sort = 'newest') => {
     vents: ventsQuery.data || [],
     stats: statsQuery.data || { counts: {}, trending: {} },
     isLoading: ventsQuery.isLoading,
+    
+    // Use .mutate for "Fire and Forget" actions
     createVent: createVentMutation.mutate,
-    toggleSupport: toggleSupportMutation.mutate,
     addComment: addCommentMutation.mutate,
     deleteVent: deleteVentMutation.mutate,
-    toggleCommentLike: toggleCommentLikeMutation.mutate,
-    replyComment: replyCommentMutation.mutate,
-    toggleReplyLike: toggleReplyLikeMutation.mutate,
+    
+    // IMPORTANT: Use .mutateAsync for actions that need 'await' in the component
+    // to catch response.data or errors in try/catch
+    toggleSupport: toggleSupportMutation.mutateAsync, 
+    toggleCommentLike: toggleCommentLikeMutation.mutateAsync,
+    replyComment: replyCommentMutation.mutateAsync,
+    toggleReplyLike: toggleReplyLikeMutation.mutateAsync,
   };
 };

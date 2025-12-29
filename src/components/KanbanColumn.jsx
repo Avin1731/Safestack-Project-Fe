@@ -4,54 +4,63 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import TaskCard from './TaskCard';
 
 const KanbanColumn = ({ status, tasks, onEditTask, projectId, isReadOnly = false }) => {
-  const { setNodeRef } = useDroppable({ id: status, disabled: isReadOnly });
+  const { setNodeRef, isOver } = useDroppable({ id: status, disabled: isReadOnly });
 
   const config = {
     'todo': { 
       label: '📌 RENCANA', 
-      bgColor: 'bg-[#FAEDCE]/40', 
-      borderColor: 'border-[#D4A373]/30', 
-      accent: 'bg-[#D4A373]' 
+      headerBg: 'bg-pale/80 dark:bg-dark-card/80',
+      borderColor: 'border-[#D4A373]/30 dark:border-yellow-900/30', 
+      accent: 'bg-[#D4A373] dark:bg-yellow-600' 
     },
     'in-progress': { 
       label: '⚡ PROSES', 
-      bgColor: 'bg-[#FEFAE0]/60', 
-      borderColor: 'border-[#BC6C25]/20', 
-      accent: 'bg-[#BC6C25]' 
+      headerBg: 'bg-cream/80 dark:bg-dark-bg/80',
+      borderColor: 'border-[#BC6C25]/20 dark:border-orange-900/30', 
+      accent: 'bg-[#BC6C25] dark:bg-orange-600' 
     },
     'done': { 
       label: '✅ SELESAI', 
-      bgColor: 'bg-[#E9EDC9]/40', 
-      borderColor: 'border-[#606C38]/30', 
-      accent: 'bg-[#606C38]' 
+      headerBg: 'bg-[#E9EDC9]/80 dark:bg-blue-900/20',
+      borderColor: 'border-olive/30 dark:border-blue-900/30', 
+      accent: 'bg-olive dark:bg-blue-600' 
     }
   };
 
   const current = config[status];
-
-  // --- LOGIC STYLE DINAMIS ---
-  // Jika ReadOnly (History): Tinggi otomatis (h-fit), scroll dimatikan (biar scroll page aja).
-  // Jika Kanban Mode: Tinggi fix (h-[70vh]), scroll aktif di dalam kolom.
-  const containerHeight = isReadOnly ? 'h-fit' : 'h-[70vh] overflow-hidden';
+  const containerHeight = isReadOnly ? 'h-fit' : 'h-[75vh]';
   const listScroll = isReadOnly ? '' : 'overflow-y-auto scrollbar-hide';
-  const droppablePadding = isReadOnly ? 'pb-0' : 'pb-10';
+  const droppablePadding = isReadOnly ? 'pb-0' : 'pb-20';
 
   return (
-    <div className={`flex flex-col ${containerHeight} min-w-[320px] rounded-[3rem] border ${current.borderColor} ${current.bgColor} p-6 transition-all shadow-inner`}>
+    <div className={`flex flex-col ${containerHeight} min-w-[340px] rounded-[3rem] backdrop-blur-sm border transition-all duration-300 shadow-sm relative overflow-hidden
+      bg-white/40 border-sage
+      dark:bg-dark-card/30 dark:border-dark-border ${current.borderColor}`}>
       
-      {/* Header Kolom */}
-      <div className="flex items-center gap-3 mb-6 px-2">
-        <div className={`w-2 h-2 rounded-full ${current.accent} animate-pulse`} />
-        <h3 className="font-black text-xs uppercase tracking-[0.2em] text-[#283618]/70">
+      {/* Visual Indicator saat Drag Over */}
+      {isOver && !isReadOnly && (
+        <div className="absolute inset-0 z-0 pointer-events-none animate-pulse
+          bg-olive/5 dark:bg-blue-500/5" />
+      )}
+
+      {/* Header Kolom (Sticky) */}
+      <div className={`flex items-center gap-3 p-6 sticky top-0 z-20 backdrop-blur-md border-b 
+        ${current.headerBg} ${current.borderColor} dark:border-dark-border`}>
+        <div className={`w-3 h-3 rounded-full shadow-sm ${current.accent} ${status === 'in-progress' ? 'animate-pulse' : ''}`} />
+        <h3 className="font-black text-xs uppercase tracking-[0.25em] text-forest/80 dark:text-dark-text">
           {current.label}
         </h3>
-        <span className="ml-auto text-[10px] font-black opacity-30">{tasks.length}</span>
+        <span className="ml-auto text-[10px] font-bold px-2 py-1 rounded-lg
+          bg-white/50 text-forest/50
+          dark:bg-dark-bg/50 dark:text-dark-sub">
+          {tasks.length}
+        </span>
       </div>
 
       {/* Area List Task */}
       <div 
         ref={setNodeRef} 
-        className={`flex-1 space-y-4 ${listScroll} ${droppablePadding}`}
+        className={`flex-1 p-4 space-y-4 ${listScroll} ${droppablePadding} relative z-10`}
       >
         <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
           {tasks.map((task) => (
@@ -60,16 +69,18 @@ const KanbanColumn = ({ status, tasks, onEditTask, projectId, isReadOnly = false
               task={task} 
               projectId={projectId} 
               onEditTask={onEditTask} 
-              // PENTING: Oper status read only ke TaskCard buat hilangin tombol edit/delete
               isReadOnly={isReadOnly} 
             />
           ))}
         </SortableContext>
         
-        {/* Placeholder hanya muncul kalau bukan mode Read Only */}
+        {/* Empty State Placeholder */}
         {tasks.length === 0 && !isReadOnly && (
-          <div className="h-24 flex items-center justify-center border-2 border-dashed border-black/5 rounded-[2.5rem] opacity-20 italic text-xs">
-            Drop tasks here...
+          <div className="h-40 flex flex-col items-center justify-center border-2 border-dashed rounded-[2.5rem] gap-2 mt-2
+            border-olive/10 text-olive/40
+            dark:border-dark-border dark:text-dark-sub/40">
+            <span className="text-2xl opacity-50">📥</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest">Kosong</span>
           </div>
         )}
       </div>

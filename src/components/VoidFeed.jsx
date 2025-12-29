@@ -2,35 +2,30 @@ import React from 'react';
 import { motion as Motion } from 'framer-motion';
 import VentCard from './VentCard';
 
-// Komponen Skeleton (Loading Placeholder)
 const SkeletonCard = () => (
-  <div className="w-full rounded-[2rem] p-6 mb-6 border-2 border-[#E0E5B6]/50 bg-white/40 animate-pulse">
+  <div className="w-full rounded-[2rem] p-6 mb-6 border-2 animate-pulse
+    border-sage/50 bg-white/40 
+    dark:border-dark-border dark:bg-dark-card/50">
     <div className="flex gap-4 mb-4">
-      {/* Avatar Skeleton */}
-      <div className="w-12 h-12 rounded-2xl bg-[#E0E5B6]/50" />
+      <div className="w-12 h-12 rounded-2xl bg-sage/50 dark:bg-dark-border" />
       <div className="flex-1 space-y-2 py-1">
-        {/* Title Skeleton */}
-        <div className="h-4 w-1/3 bg-[#E0E5B6]/50 rounded-full" />
-        <div className="h-3 w-1/4 bg-[#E0E5B6]/30 rounded-full" />
+        <div className="h-4 w-1/3 rounded-full bg-sage/50 dark:bg-dark-border" />
+        <div className="h-3 w-1/4 rounded-full bg-sage/30 dark:bg-dark-border/50" />
       </div>
     </div>
-    {/* Content Skeleton */}
     <div className="space-y-3">
-      <div className="h-4 w-full bg-[#E0E5B6]/30 rounded-full" />
-      <div className="h-4 w-5/6 bg-[#E0E5B6]/30 rounded-full" />
-      <div className="h-4 w-4/6 bg-[#E0E5B6]/30 rounded-full" />
+      <div className="h-4 w-full rounded-full bg-sage/30 dark:bg-dark-border/50" />
+      <div className="h-4 w-5/6 rounded-full bg-sage/30 dark:bg-dark-border/50" />
+      <div className="h-4 w-4/6 rounded-full bg-sage/30 dark:bg-dark-border/50" />
     </div>
   </div>
 );
 
-// Konfigurasi Animasi
 const containerVariants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.15 // Delay antar kartu
-    }
+    transition: { staggerChildren: 0.15 }
   }
 };
 
@@ -43,14 +38,12 @@ const VoidFeed = ({ vents, isLoading }) => {
   return (
     <div className="flex-1 h-full overflow-y-auto pr-2 md:pr-4 scrollbar-hide pb-20 scroll-smooth">
       
-      {/* 1. LOADING STATE (SKELETON) */}
       {isLoading ? (
         <div className="max-w-3xl mx-auto pt-4">
           {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
         </div>
       ) : (
         <>
-          {/* 2. EMPTY STATE */}
           {vents?.length === 0 ? (
             <Motion.div 
               initial={{ opacity: 0, scale: 0.9 }}
@@ -66,15 +59,13 @@ const VoidFeed = ({ vents, isLoading }) => {
                 🍃
               </Motion.div>
               <div className="space-y-2">
-                <h3 className="text-xl font-black text-[#283618] tracking-tight">Belum ada suara</h3>
-                <p className="text-sm font-medium text-[#606C38]/70 max-w-xs mx-auto leading-relaxed">
+                <h3 className="text-xl font-black tracking-tight text-forest dark:text-dark-text">Belum ada suara</h3>
+                <p className="text-sm font-medium max-w-xs mx-auto leading-relaxed text-olive/70 dark:text-dark-sub">
                   Hening sekali di sini.<br/>Jadilah yang pertama memecah kesunyian.
                 </p>
               </div>
             </Motion.div>
           ) : (
-            
-            // 3. FEED LIST (ANIMATED)
             <Motion.div 
               variants={containerVariants}
               initial="hidden"
@@ -83,23 +74,22 @@ const VoidFeed = ({ vents, isLoading }) => {
             >
               {vents.map((vent) => (
                 <Motion.div key={vent._id || vent.id} variants={itemVariants}>
-                  {/* ID diteruskan ke VentCard agar fitur scroll sidebar bekerja */}
                   <VentCard vent={vent} />
                 </Motion.div>
               ))}
               
-              {/* END OF FEED */}
+              {/* END MARKER */}
               <Motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1.5 }}
                 className="flex items-center gap-4 py-12 opacity-30 justify-center group hover:opacity-60 transition-opacity"
               >
-                <div className="h-px w-12 bg-[#283618] group-hover:w-20 transition-all" />
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#283618]">
+                <div className="h-px w-12 transition-all bg-forest group-hover:w-20 dark:bg-dark-text" />
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-forest dark:text-dark-text">
                   Dasar Void
                 </p>
-                <div className="h-px w-12 bg-[#283618] group-hover:w-20 transition-all" />
+                <div className="h-px w-12 transition-all bg-forest group-hover:w-20 dark:bg-dark-text" />
               </Motion.div>
             </Motion.div>
           )}

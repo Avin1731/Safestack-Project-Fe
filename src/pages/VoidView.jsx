@@ -4,17 +4,14 @@ import VoidFeed from '../components/VoidFeed';
 import { useVents } from '../hooks/useVents';
 
 const VoidView = ({ onOpenAddVent }) => {
-  // State Filter & Sort
   const [activeFilter, setActiveFilter] = useState('all'); 
   const [activeSort, setActiveSort] = useState('newest');
 
-  // Fetch Data (Logic ada di hook)
   const { vents: filteredVents, isLoading } = useVents(activeFilter, activeSort);
 
   return (
-    <div className="flex h-full gap-8">
-      
-      {/* KIRI: Sidebar (Filter, Sort, Trending) */}
+    <div className="flex flex-col md:flex-row h-full gap-8">
+      {/* Sidebar Filter */}
       <VoidSidebar 
         activeFilter={activeFilter}
         setActiveFilter={setActiveFilter}
@@ -23,12 +20,11 @@ const VoidView = ({ onOpenAddVent }) => {
         onOpenAddVent={onOpenAddVent}
       />
 
-      {/* KANAN: Feed Content */}
+      {/* Feed Content */}
       <VoidFeed 
         vents={filteredVents} 
         isLoading={isLoading} 
       />
-
     </div>
   );
 };

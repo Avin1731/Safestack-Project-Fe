@@ -16,6 +16,7 @@ const KanbanItem = ({ task }) => {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    scale: isDragging ? 1.05 : 1,
   };
 
   return (
@@ -24,15 +25,29 @@ const KanbanItem = ({ task }) => {
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-white p-5 rounded-3xl shadow-sm border border-[#CCD5AE] cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
+      className={`
+        backdrop-blur-md p-6 rounded-[2.5rem] shadow-sm border
+        cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-300
+        bg-white/80 border-sage hover:border-olive/30
+        dark:bg-dark-card dark:border-dark-border dark:hover:border-blue-500/50
+        ${isDragging ? 'shadow-2xl ring-2 ring-olive rotate-2 dark:ring-blue-500' : ''}
+      `}
     >
-      <p className="text-[#283618] font-medium leading-relaxed">
+      <div className="flex justify-between items-start mb-2">
+        <span className="text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded-md
+          text-olive/60 bg-sage/30
+          dark:text-dark-sub dark:bg-dark-bg">
+           Task
+        </span>
+      </div>
+
+      <p className="font-bold text-base leading-snug mb-4
+        text-forest dark:text-dark-text">
         {task.title}
       </p>
-      <div className="mt-4 flex justify-end">
-        <span className="text-[10px] bg-[#FEFAE0] px-3 py-1 rounded-full text-[#606C38] font-bold uppercase">
-          Task
-        </span>
+      
+      <div className="flex justify-end">
+        <div className="h-1 w-8 rounded-full bg-olive/20 dark:bg-dark-border"></div>
       </div>
     </div>
   );
