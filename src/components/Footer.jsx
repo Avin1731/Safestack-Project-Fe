@@ -44,7 +44,7 @@ const Footer = ({ userName }) => {
         bg-olive/5 border-olive/10 dark:bg-dark-bg dark:border-dark-border">
         <HiEye className="text-olive/50 text-xs dark:text-dark-sub" />
         <div className="flex items-baseline gap-1">
-           <span className="text-[10px] font-bold uppercase tracking-wider text-olive/40 dark:text-dark-sub/50">Logins</span>
+           <span className="text-[10px] font-bold uppercase tracking-wider text-olive/40 dark:text-dark-sub/50">Total Visitors</span>
            <span className="text-xs font-black font-mono tracking-tight text-forest dark:text-dark-text">
              {visitCount > 0 ? visitCount.toLocaleString() : '...'}
            </span>
